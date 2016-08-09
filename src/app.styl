@@ -1,0 +1,35 @@
+body
+  margin 0
+  padding 0
+*
+  box-sizing border-box  
+debug
+  border 1px solid red !important
+#app  
+  display flex
+  height 100vh
+  font-family: "微软雅黑", monospace
+  -webkit-font-smoothing antialiased
+  -moz-osx-font-smoothing grayscale
+  > div
+    flex-grow 1
+    flex-basis 50%
+    height 100%
+    border 1px solid #eeeeee
+    min-width 200px
+    &.main-left
+      flex-basis 46%
+    &.main-right
+      flex-basis 54%
+      flex-shrink 0
+  #handler
+    flex-basis 10px
+    width 10px
+    min-width 10px
+    background-color darken(#eeeeee, 10%)  
+    flex-grow 0
+    flex-shrink 0
+    cursor ew-resize
+    transition background-color .1s linear
+    &:hover
+      background-color lighten(#eeeeee, 10%)  

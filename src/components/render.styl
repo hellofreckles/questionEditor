@@ -1,0 +1,179 @@
+$borderColor = #ccd1d9
+$bgColor = #f5f7fa
+$darkBgColor = #E6E9ED
+$radius = 2px
+$padding = 10px
+$color = #434A54
+$gray = #AAB2BD
+$aqua = #009EE7
+$knewone = #8CADCA
+$mint = #37BC9B
+$error = #E9573F
+$warning = #FFA400
+
+.editor-render-wrap
+  // font-family monospace
+  font-size 14px
+  background-color $bgColor
+  border 1px solid red
+  width 100%
+  height 100%
+  max-height 100%
+  position relative
+  padding 7px $padding
+  line-height 1.75
+  height 100%
+  color $color
+  overflow auto
+  pre
+    padding 0
+    margin 0
+    display inline  
+    outline none  
+    border none  
+    background none  
+    font-size 1em  
+    border-radius 0
+    font-family inherit  
+    white-space pre-wrap  
+  ul
+    padding 0
+    margin 0
+    li
+      list-style none 
+      word-break break-all
+  .config-wrap
+    border 1px solid $borderColor
+    padding $padding
+    background-color #FFF
+    &:before
+      content '全局设置（默认）'
+      display block
+      color $warning
+      margin-bottom 5px
+    li
+      padding 2px 0
+      &:before
+        content ' '
+        display inlien-block
+        border-left 2px solid $mint 
+        margin-right .5em
+      span
+        color $gray
+  .question-wrap
+    margin-top $padding
+    border 1px solid $borderColor
+    padding $padding
+    background-color #FFF
+    &:before
+      content '题目列表'
+      display block
+      color $warning
+      margin-bottom 5px
+    li.q-item
+      display flex
+      margin-top $padding
+      border-bottom 1px solid ligten($borderColor, 50%)
+      .q-seq
+        font-family Constantia, Georgia
+        flex-shrink 0
+        color $mint
+        font-weight bold
+        font-size 22px
+        font-style italic
+        line-height 1
+        &:after
+          content '、'
+      .q-content
+        flex-grow 1 
+      .q-baseinfo
+        display flex
+        align-items baseline
+        font-size .9em
+        margin-bottom 5px
+        .q-type
+          color $gray
+        .q-skill
+        .q-difficulty   
+          margin-left 5px
+          margin-top -4px
+          background-color $darkBgColor
+          padding: 3px $padding
+          border-radius $radius
+          display inline-block
+          white-space nowrap
+          line-height 1.4
+          &:before
+            content '技能：'
+            font-size .9em
+            color $gray
+        .q-difficulty
+          &:before
+            content '难度：'
+      .q-options-wrap
+        margin-top $padding
+        .q-option
+          border 1px solid $darkBgColor
+          border-radius $radius
+          padding 6px 12px
+          margin-bottom 5px
+          display flex
+          align-items center
+          .option-icon
+            position relative
+            font-size 1em
+            content ' '
+            text-align center
+            line-height 18px
+            color #FFF
+            display inline-block
+            border 1px solid $knewone
+            width 18px
+            height 18px
+            margin-right $padding     
+            border-radius 2px 
+            &.single 
+              border-radius 18px
+            &.active
+              border 1px solid $aqua
+              background-color $aqua
+              &.multiple
+                &:after
+                  content " "
+                  display block
+                  position absolute
+                  width 12px
+                  height 7px
+                  border-left 2px solid #FFF
+                  border-bottom 2px solid #FFF
+                  transform rotate(-45deg)
+                  left 2px
+                  top 3px
+                  border-radius 1px
+              &.single
+                &:after
+                  content " "
+                  display block
+                  position absolute
+                  width 8px
+                  height 8px
+                  background-color #FFF
+                  left 4px
+                  top 4px
+                  border-radius 10px
+                
+          .option-index
+            flex-shrink 0
+            min-width 1.2em
+            color $knewone
+            &:after
+              content '.'
+              margin-right 5px
+          .option-content
+            display table
+            flex-grow 1
+            
+
+
+
+
