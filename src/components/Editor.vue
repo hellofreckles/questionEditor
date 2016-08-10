@@ -1,7 +1,6 @@
 <style lang="stylus" >
 .editor-wrap
  .CodeMirror
-  border 1px solid red	
   height 100% 
 </style>
 <style lang="stylus" scoped>
@@ -29,8 +28,7 @@ import 'codemirror/addon/edit/matchbrackets'
 import 'codemirror/mode/css/css'
 import 'codemirror/lib/codemirror.css'
 import 'codemirror/theme/mdn-like.css'
-import './mode-question'
-import './mode-editor'
+import './mode-questions'
 import './editor.styl'
 
 const template =
@@ -83,7 +81,7 @@ export default {
         lineNumbers: true,
         tabMode: 'spaces',
         lineWrapping: 'true',
-        mode: 'string',
+        mode: 'questions',
         theme: 'editor',
         indentUnit: 4,
         value: store.get('editor') || template,
@@ -91,6 +89,7 @@ export default {
         autofocus: true,
         pollInterval: 1000
   	})
+
 	parser = new Parser(editor, {
 		delay: 500,
 		onChange() {
@@ -98,6 +97,12 @@ export default {
   			store.set('editor', self.value)
   			self.$emit('update', parser.data)
 		}
+	})
+
+	editor.on('scroll', function(cm) {
+		let info = cm.getScrollInfo()
+		let percent = info.top / (info.height - info.clientHeight) // 分母为零不会触发scroll
+		self.$emit('scroll', percent)
 	})
 
   	CodeMirror.signal(editor, 'change')

@@ -1,9 +1,9 @@
 <template>
-	<div class="editor-render-wrap">
+	<div class="editor-render-wrap" v-el:container>
 		<div class="config-wrap" v-if="hasConfig">
 			<ul>
 				<li v-for="value in renderData.configs">
-					<span>{{ $key | keyFilter}} :</span> {{ value }}
+					<span>{{ $key | keyFilter}}：</span>{{ value }}
 				</li>
 			</ul>
 		</div>
@@ -19,29 +19,39 @@
 							<span class="q-difficulty">{{q.difficulty}}</span>
 						</div>
 						<pre>{{q.title}}</pre>
-						<ul class="q-options-wrap mt20">
+						<ul class="q-options-wrap">
 							<li class="q-option"
 							v-for="(optionIndex, content) in q.options">
 							<span class="option-icon" :class="optionStyle(optionIndex, q)"></span>
 							<span class="option-index">{{getOptionIndex(optionIndex)}}</span>
 							<pre class="option-content">{{content}}</pre>
 						</li>
+						<div class="property-config" v-if="q.answerExplain">
+							<span class="property-key">解析：</span>
+							<pre class="property-value">{{q.answerExplain}}</pre>
+						</div>
+
 					</ul>				
 				</div>
 			</li>
 		</ul>
 		<hr>
-		<pre>{{ plain }}</pre>
+		<!-- <pre>{{ plain }}</pre> -->
 		
 	</div>
 </div>
 </template>
 <script>
+import $ from "jquery"
+
 	const keyMap = {
 		questionType: '题型',
 		questionSkill: '技能',
 		difficulty: '难度'
 	}
+
+	let $container
+
 	export default {
 		props: {
 			renderData: {
@@ -52,6 +62,10 @@
 						questions: []
 					}
 				}
+			},
+			scrollPercent: {
+				type: Number,
+				default: 0
 			}
 		},
 		computed: {
@@ -76,8 +90,6 @@
 				}
 				if (qData.refAnswer) {
 					let currOpt = String.fromCharCode('A'.charCodeAt() + index)
-					console.log(currOpt)
-					console.log(qData.options[index])
 					if(qData.refAnswer.optAnswer.indexOf(currOpt) != -1) {
 						styles.push('active')
 					}
@@ -86,6 +98,11 @@
 			}
 		},
 		watch: {
+			scrollPercent(val) {
+				 $(this.$el).stop().animate({
+                    scrollTop: this.$el.scrollHeight * val
+                }, 50);	
+			},
 			renderData(val) {
 				// console.log(JSON.stringify(val))
 			}
@@ -95,10 +112,12 @@
 				return keyMap[value] || ''
 			}
 		},
-		data () {
+		data() {
 			return {
-				msg: 'Editor-Render'
 			}
+		},
+		ready() {
+			$container = $(this.$el)
 		}
 	}
 </script>

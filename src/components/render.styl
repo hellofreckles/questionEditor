@@ -15,7 +15,6 @@ $warning = #FFA400
   // font-family monospace
   font-size 14px
   background-color $bgColor
-  border 1px solid red
   width 100%
   height 100%
   max-height 100%
@@ -72,8 +71,8 @@ $warning = #FFA400
       margin-bottom 5px
     li.q-item
       display flex
-      margin-top $padding
-      border-bottom 1px solid ligten($borderColor, 50%)
+      border-bottom 1px dotted lighten($borderColor, 20%)
+      padding $padding 0
       .q-seq
         font-family Constantia, Georgia
         flex-shrink 0
@@ -172,7 +171,17 @@ $warning = #FFA400
           .option-content
             display table
             flex-grow 1
-            
+    .property-config
+      display flex
+      align-items baseline
+      .property-key 
+        flex-shrink 1
+        color $gray
+        white-space nowrap
+      .property-value
+        flex-grow 1
+        line-height 1.75
+               
 
 
 

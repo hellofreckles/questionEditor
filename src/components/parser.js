@@ -2,6 +2,8 @@
  * @autho 赵大欣
  * 文档参考：http://codemirror.net/
  */
+ import $ from "jquery"
+
  function getDefaultData() {
  	return {
  		configs: {},
@@ -28,10 +30,15 @@
  }
 
  function addLineHint(doc, lineNumber, hint, style) {
- 	let div = document.createElement('div')
- 	div.innerHTML = hint
- 	div.setAttribute('class', 'hint ' + (style || 'danger'))
- 	return doc.addLineWidget(lineNumber, div)
+ 	let $div = $('<div>').attr('class', 'hint ' + (style || 'danger')).html(hint)
+ 	return doc.addLineWidget(lineNumber, $div[0])
+ }
+
+ function addSeperator(doc, lineNumber) {
+ 	let $seperator = $('<hr/>')
+ 	return doc.addLineWidget(lineNumber, $seperator[0], {
+ 		above: true
+ 	})
  }
 
  // function addLineHint(doc, lineInfo, hint, style) {
@@ -98,7 +105,21 @@ questionTypeConfig
 	}
 })
 .set("判断", {
-	answer: /^[(正确|错误)(对|错)(是|否)(√|×)]$/
+	judge: true,
+	answer: {
+		test: /^(正确|错误|对|错|是|否|√|×)$/,
+		msg: '判断题的答案：正确|错误，对|错，是|否，√|×',
+		pair: new Map([
+			['正确', {a: 'A', opts: ['正确','错误']}], 
+			['错误', {a: 'B', opts: ['正确','错误']}],
+			['对', {a: 'A', opts: ['对','错']}],
+			['错', {a: 'B', opts: ['对','错']}],
+			['是', {a: 'A', opts: ['是','否']}],
+			['否', {a: 'B', opts: ['是','否']}],
+			['√', {a: 'A', opts: ['√','×']}],
+			['×', {a: 'B', opts: ['√','×']}]
+			])
+	},
 })
 .set("多选", {
 	choice: true,
@@ -136,6 +157,7 @@ class State {
 	handle(lineText) {
 		return
 	}
+
 	toString() {
 		return this.constructor.name
 	}
@@ -152,6 +174,7 @@ class SectionConfigState extends State {
 
 	// 题型：单选
 	handle(lineInfo) {
+
 		lineInfo.text.match(/^(.*)[:：](.*)$/g)
 		this.context.state = null
 		
@@ -229,6 +252,7 @@ class QuestionBeginState extends State {
 		}
 		prevData.questions.push(qData)
 
+		addSeperator(doc, lineInfo.line)
 
 		// 设置了 题型 和 技能
 		if(/^\d+[\.、]\[.*\]\s*\[.*\]/g.test(lineInfo.text)) {
@@ -294,8 +318,8 @@ class QuestionTitleState extends State {
 	handle(lineInfo) {
 		if(lineInfo.dispatch) {
 			lineInfo.dispatch = false
-			// return this.context.questionBeginState.dispatch.call(this, lineInfo)
-			return this.context.questionBeginState.dispatch(lineInfo)
+			return this.context.questionBeginState.dispatch.call(this, lineInfo)
+			// return this.context.questionBeginState.dispatch(lineInfo)
 		}
 
 		let doc = this.context.doc
@@ -349,7 +373,6 @@ class OptionBeginState extends State {
 		let questionType = qData.questionType
 		let typeInfo = questionTypeConfig.get(questionType)
 		if(matchQuestionOption(lineInfo)) {
-			prevData.dispatch = false
 			this.context.state = this.context.optionBeginState
 		} else if(matchQuestionProperty(questionType)(lineInfo)) {
 			this.context.state = this.context.questionPropertyBeginState
@@ -370,8 +393,8 @@ class OptionContentState extends State {
 	handle(lineInfo) {
 		if(lineInfo.dispatch) {
 			lineInfo.dispatch = false
-			return this.context.optionBeginState.dispatch.call(lineInfo)
-			// return this.context.optionBeginState.dispatch.call(this, lineInfo)
+			// return this.context.optionBeginState.dispatch.call(lineInfo)
+			return this.context.optionBeginState.dispatch.call(this, lineInfo)
 		}
 
 		let doc = this.context.doc
@@ -408,6 +431,30 @@ class QuestionPropertyBeginState extends State {
 		let questionType = qData.questionType
 		let typeInfo = questionTypeConfig.get(questionType)
 
+		let returnData = {
+			state: this,
+			data: prevData,
+			dispatch: true
+		}
+
+		if(propertyKey === '难度') {
+			if(difficultyValues.has(propertyValue)) {
+				qData.difficulty = propertyValue
+			} else {
+				addLineHint(doc, lineInfo.line, propertyKey + '的范围：' + [...difficultyValues], 'warning')
+			}
+		}
+
+		if(propertyKey === '解析') {
+			returnData.propertyKey = 'answerExplain'
+			qData.answerExplain = propertyValue
+		}
+
+		if(propertyKey === '参考答案') {
+			returnData.propertyKey = 'textAnswer'
+			qData.refAnswer.textAnswer = propertyValue
+		}
+
 		if(propertyKey === '答案') {
 			if (typeInfo.choice) {
 				let options = qData.options
@@ -425,18 +472,25 @@ class QuestionPropertyBeginState extends State {
 					addLineHint(doc, lineInfo.line, '答案解析错误：' + ansInfo.msg)
 				}
 				qData.refAnswer.optAnswer = propertyValue
+
+			} else if(typeInfo.judge) {
+				let ansInfo = typeInfo.answer
+				ansInfo.test.lastIndex = 0
+				if(!ansInfo.test.test(propertyValue)) {
+					addLineHint(doc, lineInfo.line, ansInfo.msg)
+				} else {
+					let ansData = ansInfo.pair.get(propertyValue)
+					qData.refAnswer.optAnswer = ansData.a
+					qData.options = ansData.opts
+				}
 			}
 		}
 
-		// console.log(doc.getEditor().lineInfo(lineInfo.line))
+		if(propertyKey === '填空数') {
 
-
-		let returnData = {
-			state: this,
-			data: prevData,
-			dispatch: true
 		}
-		
+
+		// console.log(doc.getEditor().lineInfo(lineInfo.line))
 		return returnData
 	}
 
@@ -445,15 +499,12 @@ class QuestionPropertyBeginState extends State {
 		let qData = _.last(prevData.questions)
 		let questionType = qData.questionType
 		let typeInfo = questionTypeConfig.get(questionType)
-		if(matchQuestionOption(lineInfo)) {
-			prevData.dispatch = false
-			this.context.state = this.context.optionBeginState
-		} else if(matchQuestionProperty(questionType)(lineInfo)) {
+		if(matchQuestionProperty(questionType)(lineInfo)) {
 			this.context.state = this.context.questionPropertyBeginState
 		} else if(matchQuestionBegin(lineInfo)) {
 			this.context.state = this.context.questionBeginState
 		} else {
-			this.context.state = this.context.optionContentState
+			this.context.state = this.context.questionPropertyContentState
 		}
 
 		return this.context.state.handle(lineInfo)
@@ -466,18 +517,34 @@ class QuestionPropertyContentState extends State {
 		super(context)
 	}
 
-	handleContent(stream, modeState) {
-		stream.skipToEnd()
-		resetState(modeState)
-		return 'line-property property-value'
-	}
-
-	handle(stream, modeState) {
-		if(modeState.new) {
-			modeState.new = false
-			return this.context.questionPropertyBeginState.dispatch.call(this, stream, modeState)
+	handle(lineInfo) {
+		if(lineInfo.dispatch) {
+			lineInfo.dispatch = false
+			return this.context.questionPropertyBeginState.dispatch.call(this, lineInfo)
 		}
-		return this.handleContent(stream, modeState)
+
+		let doc = this.context.doc
+		let prevData = lineInfo.data 
+		let qData = _.last(prevData.questions)
+		let propertyKey = lineInfo.propertyKey
+
+		let returnData = {
+			state: this,
+			data: prevData,
+			dispatch: true,
+			propertyKey: propertyKey
+		}
+
+		if(/answer$/.test(propertyKey)) {
+			qData.refAnswer[propertyKey] +=('\n' + lineInfo.text)
+		} else {
+			qData[propertyKey] +=('\n' + lineInfo.text)
+		}
+
+
+
+		
+		return returnData
 	}
 
 }
@@ -585,11 +652,11 @@ class Parser extends Context{
 			let prev
 			if(lineNumber > 0) {
 				// note: cloneDeep here is important, or lineCache values shared common inner Object
-				prev = _.cloneDeep(this.lineCache[lineNumber - 1], function(value){
-					if (value instanceof State) {
+				let beCloned = this.lineCache[lineNumber - 1]
+				prev = _.cloneDeepWith(this.lineCache[lineNumber - 1], function(value){
+					if(value instanceof State) {
 						return value
 					}
-					return value
 				})
 			} else {
 				prev = {
