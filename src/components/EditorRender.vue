@@ -26,11 +26,32 @@
 							<span class="option-index">{{getOptionIndex(optionIndex)}}</span>
 							<pre class="option-content">{{content}}</pre>
 						</li>
+						
+						<div class="property-config" v-if="q.blanks">
+							<span class="property-key">填空数：</span>
+							<pre class="property-value">{{q.blanks}}</pre>
+						</div>
+
+						<div class="property-config" v-if="q.answerStyle">
+							<span class="property-key">答案形式：</span>
+							<pre class="property-value">{{q.answerStyle}}</pre>
+						</div>
+
+						<div class="property-config" v-if="q.refAnswer.blankAnswer"
+							v-for="(index, blank) in q.refAnswer.blankAnswer">
+							<span class="property-key">参考答案{{index + 1}}：</span>
+							<pre class="property-value">{{blank}}</pre>
+						</div>
+
+						<div class="property-config" v-if="q.refAnswer.textAnswer">
+							<span class="property-key">参考答案：</span>
+							<pre class="property-value">{{q.refAnswer.textAnswer}}</pre>
+						</div>
+
 						<div class="property-config" v-if="q.answerExplain">
 							<span class="property-key">解析：</span>
 							<pre class="property-value">{{q.answerExplain}}</pre>
 						</div>
-
 					</ul>				
 				</div>
 			</li>
@@ -42,7 +63,7 @@
 </div>
 </template>
 <script>
-import $ from "jquery"
+	import $ from "jquery"
 
 	const keyMap = {
 		questionType: '题型',
@@ -99,9 +120,9 @@ import $ from "jquery"
 		},
 		watch: {
 			scrollPercent(val) {
-				 $(this.$el).stop().animate({
-                    scrollTop: this.$el.scrollHeight * val
-                }, 50);	
+				$(this.$el).stop().animate({
+					scrollTop: this.$el.scrollHeight * val
+				}, 50);	
 			},
 			renderData(val) {
 				// console.log(JSON.stringify(val))

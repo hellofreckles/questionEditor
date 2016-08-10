@@ -21,6 +21,16 @@ $padding = 10px
     background-color lighten($error, 60%)
     -webkit-user-select none
     user-select none
+    &.ignore
+      color darken($gray, 30%)
+      background-color lighten($gray, 60%)
+      &:before
+        content '['
+        color @color
+      &:after
+        content ']'
+        color @color
+        margin-left ($padding / 2)
     &.info
       color darken($aqua, 50%)
       background-color lighten($aqua, 60%)
@@ -39,6 +49,10 @@ $padding = 10px
     > span
       color darken(@color, 50%)
       padding 0 2px
+    a
+      cursor pointer
+      margin-left 5px
+      font-size 13px  
   pre
     padding 0 $padding
     line-height 2

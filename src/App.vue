@@ -10,7 +10,7 @@
       @scroll="scrollRender"
       ></editor>
     </div>
-    <div id="handler"></div>
+    <!-- <div id="handler"></div> -->
     <div class="main-right">
       <editor-render 
       :render-data="renderData"

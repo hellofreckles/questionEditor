@@ -29,8 +29,19 @@
  	}
  }
 
- function addLineHint(doc, lineNumber, hint, style) {
- 	let $div = $('<div>').attr('class', 'hint ' + (style || 'danger')).html(hint)
+ function addLineHint(doc, lineNumber, hint, style, action) {
+ 	let inner = hint
+ 	let $btn = null
+ 	if(action) {
+ 		$btn = $('<a>').attr({
+ 			'class': 'btn-hint btn-' + action,
+ 			'data-line': lineNumber,
+ 			'data-action': action
+ 		}).text(action=='delete'? '删除当前行':action)
+ 	}
+ 	let $div = $('<div>').attr({
+ 		'class': 'hint ' + (style || 'danger')
+ 	}).append(inner).append($btn)
  	return doc.addLineWidget(lineNumber, $div[0])
  }
 
@@ -68,20 +79,20 @@ let matchQuestionProperty = function(questionType) {
 		case '多选':
 		case '判断':
 		case '不定项':
-		return match(/^(答案|难度|解析)[:：].+/)
+		return match(/^(答案|难度|解析)[:：]/)
 		// case '不定项问答':
 		// case '多选问答':
 		// case '单选问答':
 		// return match(/^(答案|参考答案|难度|解析)[:：].+/)
 		case '问答':
-		return match(/^(难度|参考答案)[:：].+/)
+		return match(/^(难度|参考答案)[:：]/)
 		// case '视频':
 		// case '音频':
 		// return match(/^(难度)[:：].+/)
 		// case '编程':
 		// return match(/^(编程语言|难度|解析)[:：].+/)
 		case '填空':
-		return match(/^(填空数|参考答案\d+|答案形式|难度|解析)[:：].+/)
+		return match(/^(填空数|参考答案\d+|答案形式|难度|解析)[:：]/)
 	}
 }
 
@@ -232,10 +243,11 @@ class QuestionBeginState extends State {
 		}
 		this.context.state = null
 
-		let matches = /^\d+[\.、](?:\[(.*?)\])?(?:\[(.*?)\])?(.*)$/g.exec(lineInfo.text)
-		let questionType = matches[1]
-		let questionSkill = matches[2]
-		let title = matches[3]
+		let matches = /^(\d+)[\.、](?:\[(.*?)\])?(?:\[(.*?)\])?(.*)$/g.exec(lineInfo.text)
+		let questionIndex = matches[1] * 1
+		let questionType = matches[2]
+		let questionSkill = matches[3]
+		let title = matches[4]
 
 		let prevData = lineInfo.data 
 		let doc = this.context.doc
@@ -250,6 +262,21 @@ class QuestionBeginState extends State {
 			},
 			refAnswer: {}
 		}
+
+		let shouldQuestionIndex = prevData.questions.length + 1
+		if(questionIndex != shouldQuestionIndex) {
+			let cursor = doc.getCursor()
+			doc.setSelection({
+				line: lineInfo.line,
+				ch: 0
+			}, {
+				line: lineInfo.line,
+				ch: (questionIndex + '').length
+			})
+			doc.replaceSelection(shouldQuestionIndex + '')
+			doc.setCursor(cursor)
+		}
+
 		prevData.questions.push(qData)
 
 		addSeperator(doc, lineInfo.line)
@@ -443,19 +470,16 @@ class QuestionPropertyBeginState extends State {
 			} else {
 				addLineHint(doc, lineInfo.line, propertyKey + '的范围：' + [...difficultyValues], 'warning')
 			}
-		}
 
-		if(propertyKey === '解析') {
+		} else if(propertyKey === '解析') {
 			returnData.propertyKey = 'answerExplain'
 			qData.answerExplain = propertyValue
-		}
 
-		if(propertyKey === '参考答案') {
+		} else if(propertyKey === '参考答案') {
 			returnData.propertyKey = 'textAnswer'
 			qData.refAnswer.textAnswer = propertyValue
-		}
 
-		if(propertyKey === '答案') {
+		} else if(propertyKey === '答案') {
 			if (typeInfo.choice) {
 				let options = qData.options
 				let optionCount = options && options.length || 26
@@ -483,10 +507,21 @@ class QuestionPropertyBeginState extends State {
 					qData.refAnswer.optAnswer = ansData.a
 					qData.options = ansData.opts
 				}
+			} else {
+				addLineHint(doc, lineInfo.line, '非客观题请使用[参考答案]')
 			}
-		}
 
-		if(propertyKey === '填空数') {
+		} else if(propertyKey === '填空数') {
+			if(!/^\d+$/.test(propertyValue)) {
+				addLineHint(doc, lineInfo.line, '请填写有效的数字')
+			} else {
+				qData.blanks = propertyValue * 1
+			}
+		} else if(propertyKey === '答案形式') {
+
+		} else if(propertyKey === '答案形式') {
+
+		} else {
 
 		}
 
@@ -505,7 +540,7 @@ class QuestionPropertyBeginState extends State {
 			this.context.state = this.context.questionBeginState
 		} else {
 			this.context.state = this.context.questionPropertyContentState
-		}
+		} 
 
 		return this.context.state.handle(lineInfo)
 	}
@@ -527,7 +562,6 @@ class QuestionPropertyContentState extends State {
 		let prevData = lineInfo.data 
 		let qData = _.last(prevData.questions)
 		let propertyKey = lineInfo.propertyKey
-
 		let returnData = {
 			state: this,
 			data: prevData,
@@ -535,15 +569,13 @@ class QuestionPropertyContentState extends State {
 			propertyKey: propertyKey
 		}
 
-		if(/answer$/.test(propertyKey)) {
+		if(!propertyKey) {
+			addLineHint(doc, lineInfo.line, '无效行，做忽略处理', 'ignore', 'delete')
+		} else if(/answer$/.test(propertyKey)) {
 			qData.refAnswer[propertyKey] +=('\n' + lineInfo.text)
 		} else {
 			qData[propertyKey] +=('\n' + lineInfo.text)
 		}
-
-
-
-		
 		return returnData
 	}
 
@@ -589,6 +621,7 @@ class Context {
 		} else if(matchQuestionBegin(lineInfo)) {
 			this.state= this.questionBeginState
 		} else {
+			addLineHint(this.doc, lineInfo.line, '无效行，做忽略处理', 'ignore', 'delete')
 			return returnData
 		}
 
@@ -637,6 +670,16 @@ class Parser extends Context{
 				self.onChange()
 			}, self.delay)
 		})
+		$(this.editor.getWrapperElement()).on('click', '.hint .btn-hint', function (e) {
+			let $btn = $(e.target).closest('.btn-hint')
+			let action = $btn.data('action')
+			let line = $btn.data('line')
+
+			if(action === 'delete') {
+				self.doc.setCursor({line: line})
+				self.editor.execCommand('deleteLine')
+			}
+		})
 	}
 
 	parse(changeStart) {
@@ -653,7 +696,7 @@ class Parser extends Context{
 			if(lineNumber > 0) {
 				// note: cloneDeep here is important, or lineCache values shared common inner Object
 				let beCloned = this.lineCache[lineNumber - 1]
-				prev = _.cloneDeepWith(this.lineCache[lineNumber - 1], function(value){
+				prev = _.cloneDeepWith(this.lineCache[lineNumber - 1], function(value) {
 					if(value instanceof State) {
 						return value
 					}
@@ -663,6 +706,9 @@ class Parser extends Context{
 					data: getDefaultData()
 				}
 			}
+
+			// if(lineNumber === 30)
+			// 	debugger
 
 			// 返回
 			// 1. data - 以 当前行 为止解析的数据对象
